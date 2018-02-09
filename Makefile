@@ -11,7 +11,7 @@ OPT_ARGS=-O2
 all: chacha
 
 chacha:
-	$(CXX) $(DEBUG_ARGS) $(NSS_INCLUDES) $(NSS_LIBS) nss-bench.cc lib/*.cc -o nss-bench
+	$(CXX) $(DEBUG_ARGS) $(OPT_ARGS) $(NSS_INCLUDES) $(NSS_LIBS) nss-bench.cc lib/*.cc -o nss-bench
 
 clean:
 	rm -rf nss-bench

@@ -22,7 +22,7 @@ static const uint8_t nonce[12] = {0x07, 0x00, 0x00, 0x00, 0x40, 0x41,
 static const uint32_t rounds = 500;
 static const uint32_t plaintext_len = 0x10000;
 
-bool aes128gcm() {
+bool aesgcm(size_t key_len) {
   uint8_t mac[16] = {0};
   uint64_t res = 0;
   uint8_t plaintext[plaintext_len] = {0};
@@ -36,14 +36,15 @@ bool aes128gcm() {
   t1 = clock();
   a = rdtsc();
   for (int i = 0; i < rounds; i++) {
-    aes128gcm(ciphertext, mac, plaintext, plaintext_len, aad, 12, nonce, key);
+    aesgcm(ciphertext, mac, plaintext, plaintext_len, aad, 12, nonce, key,
+           key_len);
     plaintext[0] = mac[0];
   }
   b = rdtsc();
   t2 = clock();
   uint64_t cycles = b - a;
   clock_t time = t2 - t1;
-  std::cout << "AES128-GCM speed:\n"
+  std::cout << "AES" << (key_len << 3) << "-GCM speed:\n"
             << cycles << " cycles\n"
             << time << " time" << std::endl;
   return true;
@@ -86,7 +87,11 @@ int main(int argc, char const *argv[]) {
     return 1;
   }
 
-  if (!aes128gcm()) {
+  if (!aesgcm(16)) {
+    return 1;
+  }
+
+  if (!aesgcm(32)) {
     return 1;
   }
 
