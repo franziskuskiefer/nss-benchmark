@@ -5,7 +5,7 @@ NSS_INCLUDES=-I/usr/include/nspr
 NSS_LIBS=-lnss3
 
 CXX=g++
-DEBUG_ARGS=-g
+DEBUG_ARGS=-g -Wall -Werror
 OPT_ARGS=-O2
 
 FILES=nss-bench.cc aead.cc hash.cc

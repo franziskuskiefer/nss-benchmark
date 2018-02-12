@@ -34,7 +34,7 @@ bool aesgcm(size_t key_len) {
 
   t1 = clock();
   a = rdtsc();
-  for (int i = 0; i < rounds; i++) {
+  for (uint32_t i = 0; i < rounds; i++) {
     do_aesgcm(ciphertext, mac, plaintext, plaintext_len, aad, 12, nonce, key,
               key_len);
     plaintext[0] = mac[0];
@@ -62,7 +62,7 @@ bool chachapoly() {
 
   t1 = clock();
   a = rdtsc();
-  for (int i = 0; i < rounds; i++) {
+  for (uint32_t i = 0; i < rounds; i++) {
     do_chacha20poly1305(ciphertext, mac, plaintext, plaintext_len, aad, 12,
                         nonce, key);
     plaintext[0] = mac[0];
