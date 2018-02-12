@@ -1,9 +1,14 @@
+#include <assert.h>
+#include <iostream>
 #include <nss/nss.h>
 #include <nss/pk11pub.h>
 #include <nss/pkcs11n.h>
 #include <nss/seccomon.h>
 
 #include "nss.h"
+#include "scoped_ptrs.h"
+
+using namespace std;
 
 bool init() {
   SECStatus rv = NSS_NoDB_Init("");
@@ -15,10 +20,11 @@ bool init() {
 
 void shutdown() { (void)NSS_Shutdown(); }
 
-void chacha20poly1305(uint8_t *ciphertext, uint8_t *mac, uint8_t *plaintext,
-                      int len, const uint8_t *aad, int aad_len,
-                      const uint8_t *iv, const uint8_t *key) {
+void do_chacha20poly1305(uint8_t *ciphertext, uint8_t *mac, uint8_t *plaintext,
+                         int len, const uint8_t *aad, int aad_len,
+                         const uint8_t *iv, const uint8_t *key) {
   PK11SlotInfo *slot = PK11_GetInternalSlot();
+  assert(slot);
   SECItem keyItem = {siBuffer, const_cast<unsigned char *>(key), 32};
 
   PK11SymKey *symKey =
@@ -48,10 +54,11 @@ void chacha20poly1305(uint8_t *ciphertext, uint8_t *mac, uint8_t *plaintext,
   memcpy(mac, ciphertext + len, 16);
 }
 
-void aesgcm(uint8_t *ciphertext, uint8_t *mac, uint8_t *plaintext, int len,
-            const uint8_t *aad, int aad_len, const uint8_t *iv,
-            const uint8_t *key, size_t key_len) {
+void do_aesgcm(uint8_t *ciphertext, uint8_t *mac, uint8_t *plaintext, int len,
+               const uint8_t *aad, int aad_len, const uint8_t *iv,
+               const uint8_t *key, size_t key_len) {
   PK11SlotInfo *slot = PK11_GetInternalSlot();
+  assert(slot);
   SECItem keyItem = {siBuffer, const_cast<unsigned char *>(key),
                      static_cast<unsigned int>(key_len)};
 
@@ -78,4 +85,48 @@ void aesgcm(uint8_t *ciphertext, uint8_t *mac, uint8_t *plaintext, int len,
     return;
   }
   memcpy(mac, ciphertext + len, 16);
+}
+
+void do_sha2(size_t output_len, uint8_t *input, int input_len,
+             uint8_t *digest) {
+  ScopedPK11SlotInfo slot(PK11_GetInternalSlot());
+  assert(slot);
+  SECOidTag oid;
+  switch (output_len) {
+  case 256:
+    oid = SEC_OID_SHA256;
+    break;
+  case 384:
+    oid = SEC_OID_SHA384;
+    break;
+  case 512:
+    oid = SEC_OID_SHA512;
+    break;
+  default:
+    assert(false);
+    cout << output_len << " is not a valid SHA2 output length." << endl;
+    return;
+  }
+  ScopedPK11Context context(PK11_CreateDigestContext(oid));
+  if (!context) {
+    cout << "CreateDigestContext failed" << endl;
+    return;
+  }
+  SECStatus rv = PK11_DigestBegin(context.get());
+  if (rv != SECSuccess) {
+    cout << "DigestBegin failed" << endl;
+    return;
+  }
+  rv = PK11_DigestOp(context.get(), input, input_len);
+  if (rv != SECSuccess) {
+    cout << "DigestUpdate failed" << endl;
+    return;
+  }
+  size_t out_bytes = output_len >> 3;
+  unsigned int len;
+  rv = PK11_DigestFinal(context.get(), digest, &len, out_bytes);
+  if (rv != SECSuccess || len != out_bytes) {
+    cout << "DigestFinal failed" << endl;
+    return;
+  }
 }

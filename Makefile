@@ -8,10 +8,10 @@ CXX=g++
 DEBUG_ARGS=-g
 OPT_ARGS=-O2
 
-all: chacha
+FILES=nss-bench.cc aead.cc hash.cc
 
-chacha:
-	$(CXX) $(DEBUG_ARGS) $(OPT_ARGS) $(NSS_INCLUDES) $(NSS_LIBS) nss-bench.cc lib/*.cc -o nss-bench
+all:
+	$(CXX) $(DEBUG_ARGS) $(OPT_ARGS) $(NSS_INCLUDES) $(NSS_LIBS) $(FILES) lib/*.cc -o nss-bench
 
 clean:
 	rm -rf nss-bench
